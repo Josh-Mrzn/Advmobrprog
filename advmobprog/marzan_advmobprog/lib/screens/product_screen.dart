@@ -12,7 +12,7 @@ import '../widgets/custom_text.dart';
 
 // screens
 // ENHANCEMENT 2: details page opened when a card is tapped.
-import 'product_details_screen.dart';
+import 'detail_screen.dart';
 
 class ProductScreen extends StatefulWidget {
   const ProductScreen({super.key});
@@ -170,8 +170,11 @@ class _ProductScreenState extends State<ProductScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  ProductDetailsScreen(product: product),
+                              // LAB 3 - ENHANCEMENT 1: shared detail_screen.
+                              builder: (context) => DetailScreen(
+                                productId: product.id,
+                                product: product,
+                              ),
                             ),
                           );
                         },

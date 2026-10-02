@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'cart_screen.dart';
 import 'product_screen.dart';
 
 import '../widgets/custom_text.dart';
@@ -26,16 +27,13 @@ class _HomeScreenState extends State<HomeScreen> {
           automaticallyImplyLeading: false,
           elevation: 2,
           title: (_selectedIndex == 0)
-              ? Image.asset(
-                  'assets/images/NU LOGO.png',
-                  scale: 11.sp,
-                )
+              ? Image.asset('assets/images/NU LOGO.png', scale: 11.sp)
               : CustomText(
                   text: (_selectedIndex == 1)
-                      ? 'Chat'
+                      ? 'Cart'
                       : (_selectedIndex == 2)
-                          ? 'Profile'
-                          : 'Home',
+                      ? 'Profile'
+                      : 'Home',
                   fontSize: 20.sp,
                   // color: FB_LIGHT_PRIMARY,
                   fontWeight: FontWeight.w600,
@@ -50,20 +48,45 @@ class _HomeScreenState extends State<HomeScreen> {
         body: PageView(
           physics: const NeverScrollableScrollPhysics(),
           controller: _pageController,
-          children: const <Widget>[ProductScreen()],
+          // LAB 3 - ENHANCEMENT 1: CartScreen added as the second page.
+          children: <Widget>[
+            const ProductScreen(),
+            const CartScreen(),
+            Center(
+              child: CustomText(text: 'Profile', fontSize: 16.sp),
+            ),
+          ],
           onPageChanged: (page) {
             setState(() {
               _selectedIndex = page;
             });
           },
         ),
+        // ======================= LAB 3 - ENHANCEMENT 2 =======================
+        // Chat moved from the bottom navigation to a FloatingActionButton.
+        // The button is hidden while the CartScreen (index 1) is shown.
+        // =====================================================================
+        floatingActionButton: (_selectedIndex == 1)
+            ? null
+            : FloatingActionButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Chat coming soon')),
+                  );
+                },
+                child: const Icon(Icons.chat),
+              ),
         bottomNavigationBar: BottomNavigationBar(
           showSelectedLabels: false, //selected item
           showUnselectedLabels: false, //unselected item
           onTap: _onTappedBar,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.shop_2), label: 'Shop'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+            // LAB 3 - ENHANCEMENT 2: Chat replaced by Cart.
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart),
+              label: 'Cart',
+            ),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
           currentIndex: _selectedIndex,

@@ -94,3 +94,89 @@ falls back to `Theme.of(context).colorScheme.onSurface`. Because every label in 
 through `CustomText`, flipping the switch turns all text light in dark mode and dark in light mode.
 The search bar sets its border, hint and typed-text colours from the same `ColorScheme` for the
 same reason.
+
+## Lab Activity 3: discussion
+
+> The Lab 3 project lives in `advmobprog/marzan_advmobprog/`.
+
+### How the cart model, service and screen interact to render the API endpoint
+
+The cart follows the same flow as the products from Lab 2, and both lists end in the same
+`detail_screen.dart`:
+
+1. **Model — `lib/models/cart.dart`.**
+   `Cart.fromJson()` turns the response into a `Cart` (id, userId, totals, quantities), and each
+   entry of its `products` array becomes a `CartProduct` (id, title, price, quantity, discount,
+   thumbnail). `toJson()` does the reverse, so the same model can be sent back to the API.
+
+2. **Service — `lib/services/cart_service.dart`.**
+   `CartService` is the only place that calls the cart endpoints:
+   - `getAllCarts()` → `GET $host/carts`
+   - `getCartByUserId(userId)` → `GET $host/carts/user/{userId}`; the first cart in the result is
+     returned so only **one user's cart** is rendered (user `1`, set in `constants.dart`).
+   - `getCartById(id)` → `GET $host/carts/{id}`
+   - `addToCart(userId, productId, quantity)` → `POST $host/carts/add`
+
+3. **Screen — `lib/screens/cart_screen.dart`.**
+   `CartScreen` creates the `Future<Cart?>` once in `initState()` and renders it with a
+   `FutureBuilder` (loading, error, empty, data). Each `CartProduct` is a card with its thumbnail,
+   price, discount, and `+` / `-` quantity buttons, and a summary shows subtotal, discount,
+   delivery fee and total above a **Confirm Order** button.
+
+4. **Same detail screen.**
+   A `CartProduct` only carries a few product fields, so tapping a cart item opens
+   `DetailScreen(productId: item.id)`. The detail screen then loads the full product with
+   `ProductService.getProductById()` (`GET $host/products/{id}`). `ProductScreen` already has the
+   full `Product`, so it passes it in as `DetailScreen(productId: product.id, product: product)`
+   and no second request is made. One screen widget therefore serves both lists.
+
+```
+CartService (HTTP + decode) -> Cart.fromJson / CartProduct.fromJson -> FutureBuilder in CartScreen
+     -> tap item -> DetailScreen(productId) -> ProductService.getProductById -> product details
+```
+
+### The updated design pattern
+
+The layered structure from Lab 2 is kept and extended with one more feature on each layer:
+
+- `models/` — `cart.dart` added beside `product.dart`.
+- `services/` — `cart_service.dart` added beside `product_service.dart`.
+- `screens/` — `cart_screen.dart` added; `product_details_screen.dart` was renamed to
+  `detail_screen.dart` because it is now shared by two screens.
+- `constants.dart` — still holds the `HOST` from `.env`, plus `cartUserId`.
+
+Screens still never call `http` or parse JSON; they only use the services and the typed models.
+`detail_screen.dart` is a reusable screen that accepts either a full `Product` or just an id.
+
+### How to use getById at the Cart endpoint
+
+DummyJSON exposes a single cart at `GET https://dummyjson.com/carts/{id}`, which returns one cart
+object (not a list). In `CartService`:
+
+```dart
+Future<Cart> getCartById(int id) async {
+  final response = await http.get(Uri.parse('$host/carts/$id'));
+  if (response.statusCode == 200) {
+    return Cart.fromJson(jsonDecode(response.body));
+  } else {
+    throw Exception('Failed to load cart $id');
+  }
+}
+```
+
+The difference from the user endpoint: `/carts/{id}` looks up the cart's own id and returns the
+object directly, while `/carts/user/{userId}` looks up the owner and returns
+`{ "carts": [ ... ] }`, so the list has to be unwrapped first.
+
+### Enhancements
+
+- **Enhancement 1 — Cart screen.** `CartScreen` renders the cart endpoint. Every item is clickable
+  and opens the shared `detail_screen.dart`.
+- **Enhancement 2 — Chat as a FloatingActionButton.** Chat was removed from the bottom navigation
+  (now Shop, Cart and Profile) and moved to a `FloatingActionButton`. In `HomeScreen` the button
+  is set to `null` when `_selectedIndex == 1`, so it is hidden on the cart screen.
+- **Enhancement 3 — Cart by user id and add to cart.** The cart screen uses
+  `GET /carts/user/1` to show one user's cart. The detail screen has an **Add to Cart** button
+  that posts `{ userId, products: [{ id, quantity }] }` to `POST /carts/add` and shows the
+  returned cart id and total. DummyJSON only simulates this request: the new cart is returned
+  but not saved, so it does not appear in `GET /carts/user/1` afterwards.
