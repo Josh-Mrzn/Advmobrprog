@@ -66,7 +66,8 @@ class Product {
       warrantyInformation: json['warrantyInformation'] ?? '',
       shippingInformation: json['shippingInformation'] ?? '',
       availabilityStatus: json['availabilityStatus'] ?? '',
-      reviews: (json['reviews'] as List?)
+      reviews:
+          (json['reviews'] as List?)
               ?.map((e) => ProductReview.fromJson(e))
               .toList() ??
           [],
