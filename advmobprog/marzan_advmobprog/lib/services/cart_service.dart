@@ -7,8 +7,9 @@ import '../models/cart.dart';
 class CartService {
   // Products added with addToCart. DummyJSON does not save /carts/add,
   // so they are kept here and merged into the CartScreen.
-  static final ValueNotifier<List<CartProduct>> addedProducts =
-      ValueNotifier([]);
+  static final ValueNotifier<List<CartProduct>> addedProducts = ValueNotifier(
+    [],
+  );
 
   Future<List<Cart>> getAllCarts() async {
     final response = await http.get(Uri.parse('$host/carts'));

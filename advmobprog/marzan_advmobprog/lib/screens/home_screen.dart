@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'cart_screen.dart';
 import 'product_screen.dart';
+import 'profile_screen.dart';
 
 import '../widgets/custom_text.dart';
 
@@ -20,6 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // LAB 4: user data passed by the splash or sign in screen.
+    final userData =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -32,7 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   text: (_selectedIndex == 1)
                       ? 'Cart'
                       : (_selectedIndex == 2)
-                      ? 'Profile'
+                      // LAB 4 - ENHANCEMENT 3: first name on the profile tab.
+                      ? (userData?['firstName'] ?? 'Profile')
                       : 'Home',
                   fontSize: 20.sp,
                   // color: FB_LIGHT_PRIMARY,
@@ -52,9 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
           children: <Widget>[
             const ProductScreen(),
             const CartScreen(),
-            Center(
-              child: CustomText(text: 'Profile', fontSize: 16.sp),
-            ),
+            // LAB 4 - ENHANCEMENT 3: profile_screen as the third page.
+            const ProfileScreen(),
           ],
           onPageChanged: (page) {
             setState(() {

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-// constants
-import '../constants.dart';
-
 // models
 import '../models/product.dart';
 
 // services
 import '../services/cart_service.dart';
 import '../services/product_service.dart';
+import '../services/user_service.dart';
 
 // widgets
 import '../widgets/custom_text.dart';
@@ -53,8 +51,10 @@ class _DetailScreenState extends State<DetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
+      // LAB 4 - ENHANCEMENT 3: add to the saved user's cart.
+      final user = await UserService().getUser();
       final cart = await CartService().addToCart(
-        userId: cartUserId,
+        userId: user.id,
         productId: widget.productId,
       );
       messenger.showSnackBar(

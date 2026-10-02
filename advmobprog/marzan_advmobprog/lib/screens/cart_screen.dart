@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-// constants
-import '../constants.dart';
-
 // models
 import '../models/cart.dart';
 
 // services
 import '../services/cart_service.dart';
+import '../services/user_service.dart';
 
 // widgets
 import '../widgets/custom_text.dart';
@@ -36,8 +34,10 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
-    // LAB 3 - ENHANCEMENT 3: render only one user's cart.
-    _cartFuture = CartService().getCartByUserId(cartUserId);
+    // LAB 4 - ENHANCEMENT 3: render the cart of the saved user id.
+    _cartFuture = UserService().getUser().then(
+      (user) => CartService().getCartByUserId(user.id),
+    );
   }
 
   int _quantityOf(CartProduct item) => _quantities[item.id] ?? item.quantity;
