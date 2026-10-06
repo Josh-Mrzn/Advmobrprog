@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -10,6 +11,9 @@ import '../services/user_service.dart';
 
 // widgets
 import '../widgets/custom_text.dart';
+
+// screens
+import 'signup_screen.dart';
 
 // ======================= LAB 4 - ENHANCEMENT 3 =======================
 // Profile page. The User model is read back from SharedPreferences
@@ -26,7 +30,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
-  late final Future<User> _userFuture;
+  late Future<User> _userFuture;
 
   @override
   void initState() {
@@ -68,6 +72,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildHeader(user),
             SizedBox(height: 16.h),
             _buildInfo(user),
+            SizedBox(height: 16.h),
+            _buildAccountActions(user),
             SizedBox(height: 24.h),
             SizedBox(
               height: 48.h,
@@ -119,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             SizedBox(height: 12.h),
             CustomText(
-              text: user.fullName,
+              text: user.fullName.isEmpty ? user.username : user.fullName,
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
               textAlign: TextAlign.center,
@@ -141,13 +147,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      // LAB 5 - ENHANCEMENT 3: details depend on the LoginType.
       child: Column(
         children: [
+          _infoTile(
+            Icons.login,
+            'Login Type',
+            user.isFirebase ? 'Firebase' : 'DummyJSON',
+          ),
+          const Divider(height: 1),
           _infoTile(Icons.email_outlined, 'Email', user.email),
           const Divider(height: 1),
-          _infoTile(Icons.wc, 'Gender', user.gender),
-          const Divider(height: 1),
-          _infoTile(Icons.badge_outlined, 'User ID', '#${user.id}'),
+          if (user.isFirebase) ...[
+            _infoTile(Icons.cake_outlined, 'Age', '${user.age}'),
+            const Divider(height: 1),
+            _infoTile(Icons.phone_outlined, 'Contact No.', user.phone),
+            const Divider(height: 1),
+            _infoTile(Icons.badge_outlined, 'User ID', user.uid),
+          ] else ...[
+            _infoTile(Icons.wc, 'Gender', user.gender),
+            const Divider(height: 1),
+            _infoTile(Icons.badge_outlined, 'User ID', '#${user.id}'),
+          ],
         ],
       ),
     );
@@ -173,4 +194,212 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  // ======================= LAB 5 - ENHANCEMENT 3 =======================
+  // Account actions through the Firebase UserService functions. A
+  // DummyJSON account is read-only, so only Firebase users get them.
+  // =====================================================================
+  Widget _buildAccountActions(User user) {
+    if (!user.isFirebase) {
+      return CustomText(
+        text:
+            'DummyJSON accounts are read-only. Sign up with Firebase to '
+            'update your username, password or account.',
+        fontSize: 12.sp,
+        textAlign: TextAlign.center,
+      );
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      child: Column(
+        children: [
+          _actionTile(Icons.edit_outlined, 'Update Username', _updateUsername),
+          const Divider(height: 1),
+          _actionTile(Icons.password, 'Change Password', _changePassword),
+          const Divider(height: 1),
+          _actionTile(
+            Icons.delete_outline,
+            'Delete Account',
+            _deleteAccount,
+            color: Colors.red,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionTile(
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
+    return ListTile(
+      leading: Icon(icon, size: 22.sp, color: color ?? Colors.amber.shade700),
+      title: CustomText(
+        text: label,
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w600,
+        color: color,
+      ),
+      trailing: Icon(Icons.chevron_right, size: 20.sp),
+      onTap: onTap,
+    );
+  }
+
+  Future<void> _updateUsername() async {
+    final values = await _showFormDialog(
+      title: 'Update Username',
+      action: 'Save',
+      fields: [
+        _DialogField(
+          'New Username',
+          validator: (value) => (value == null || value.trim().length < 3)
+              ? 'Username must be at least 3 characters'
+              : null,
+        ),
+      ],
+    );
+    if (values == null) return;
+
+    await _runAction('Username updated', () async {
+      await _userService.updateUsername(username: values[0].trim());
+      await _userService.saveFirebaseSession();
+    });
+    if (!mounted) return;
+    setState(() => _userFuture = _userService.getUser());
+  }
+
+  Future<void> _changePassword() async {
+    final values = await _showFormDialog(
+      title: 'Change Password',
+      action: 'Change',
+      fields: [
+        _DialogField('Current Password', obscure: true),
+        _DialogField(
+          'New Password',
+          obscure: true,
+          validator: validatePassword,
+        ),
+      ],
+    );
+    if (values == null) return;
+
+    await _runAction('Password changed', () async {
+      await _userService.resetPasswordFromCurrentPassword(
+        currentPassword: values[0],
+        newPassword: values[1],
+        email: _userService.currentUser!.email!,
+      );
+    });
+  }
+
+  Future<void> _deleteAccount() async {
+    final values = await _showFormDialog(
+      title: 'Delete Account',
+      message:
+          'This permanently deletes your account. Enter your password '
+          'to confirm.',
+      action: 'Delete',
+      fields: [_DialogField('Password', obscure: true)],
+    );
+    if (values == null) return;
+
+    final deleted = await _runAction('Account deleted', () async {
+      await _userService.deleteAccount(
+        email: _userService.currentUser!.email!,
+        password: values[0],
+      );
+    });
+    if (deleted) await _logout();
+  }
+
+  /// Runs a Firebase action and reports the result in a snackbar.
+  Future<bool> _runAction(
+    String success,
+    Future<void> Function() action,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await action();
+      messenger.showSnackBar(SnackBar(content: Text(success)));
+      return true;
+    } catch (e) {
+      final message = e is FirebaseAuthException ? e.message ?? e.code : '$e';
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+      return false;
+    }
+  }
+
+  /// Shows a dialog with the given text fields; returns their values,
+  /// or null when cancelled.
+  Future<List<String>?> _showFormDialog({
+    required String title,
+    required String action,
+    required List<_DialogField> fields,
+    String? message,
+  }) async {
+    final formKey = GlobalKey<FormState>();
+    final controllers = [for (final _ in fields) TextEditingController()];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: CustomText(
+          text: title,
+          fontSize: 16.sp,
+          fontWeight: FontWeight.w600,
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (message != null) CustomText(text: message, fontSize: 12.sp),
+              for (var i = 0; i < fields.length; i++)
+                TextFormField(
+                  controller: controllers[i],
+                  obscureText: fields[i].obscure,
+                  decoration: InputDecoration(
+                    labelText: fields[i].label,
+                    errorMaxLines: 2,
+                  ),
+                  validator:
+                      fields[i].validator ??
+                      (value) =>
+                          (value == null || value.isEmpty) ? 'Required' : null,
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+
+    final values = [for (final c in controllers) c.text];
+    return confirmed == true ? values : null;
+  }
+}
+
+class _DialogField {
+  final String label;
+  final bool obscure;
+  final FormFieldValidator<String>? validator;
+
+  _DialogField(this.label, {this.obscure = false, this.validator});
 }

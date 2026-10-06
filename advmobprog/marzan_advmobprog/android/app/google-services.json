@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "621613260649",
+    "project_id": "marzan-advmobprog",
+    "storage_bucket": "marzan-advmobprog.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621613260649:android:ea639d35847eb14560a7f8",
+        "android_client_info": {
+          "package_name": "com.example.marzan_advmobprog"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGKhgJZKycWL3bG_dtXsYN5t7HP6RMIgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

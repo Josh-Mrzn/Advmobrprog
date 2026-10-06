@@ -271,3 +271,74 @@ the saved `user.id`.
   login response and the saved data. `ProfileScreen` renders the saved user (avatar, name,
   username, email, gender, user id) with a Log Out button, and `CartScreen` loads the cart of the
   saved user id.
+
+## Lab Activity 5: discussion
+
+### Workflow: DummyJSON vs Firebase, from sign in to sign up
+
+The app now supports two login types (`LoginType.dummyJson` and `LoginType.firebase`, in
+`models/user.dart`). The sign in screen decides which one to use from the input: a value with an
+`@` is treated as an email and goes to Firebase, anything else is a DummyJSON username.
+
+**DummyJSON (username + password)**
+
+1. `SignInScreen` calls `UserService.loginUser()`, which sends `POST $host/auth/login`.
+2. DummyJSON checks the credentials on its server and returns the user plus an `accessToken` and
+   `refreshToken`.
+3. `saveUserData()` stores the response in `SharedPreferences` with `loginType = dummyjson`.
+4. The splash screen's `isLoggedIn()` checks the saved token on the next launch.
+5. Sign up is not real here: DummyJSON is a mock API (`/users/add` only simulates a new user), so
+   the data never persists and a DummyJSON account is read-only on the profile screen.
+
+**Firebase (email + password)**
+
+1. *Sign up:* `SignUpScreen` validates first name, last name, age, contact no., username, email
+   and password (8+ characters with upper case, lower case, number and special character). It calls
+   `createAccount()` (`createUserWithEmailAndPassword`), then `updateUsername()` to store the
+   username as the Firebase display name. Firebase Auth only stores email and display name, so the
+   other fields are saved per user with `saveFirebaseProfile(uid, ...)`.
+2. *Sign in:* `SignInScreen` calls `signIn()` (`signInWithEmailAndPassword`).
+3. `saveFirebaseSession()` reads the Firebase user, calls `getIdToken(true)` to get a fresh ID
+   token, merges the saved profile and stores it with `saveUserData()` and `loginType = firebase`.
+4. On the next launch `isLoggedIn()` also requires `FirebaseAuth.currentUser` and refreshes the
+   ID token. The Firebase SDK keeps the session on the device and refreshes tokens on its own.
+5. *Profile:* the user can update the username (`updateUsername`), change the password
+   (`resetPasswordFromCurrentPassword`, which re-authenticates with the current password first)
+   and delete the account (`deleteAccount`, which also re-authenticates).
+6. *Log out* (profile or settings): `logout()` calls `signOut()`, clears the session from
+   `SharedPreferences` and returns to `/signin`.
+
+### The main idea of the UserService
+
+`UserService` is the single place that knows how authentication works. The screens only call
+methods such as `loginUser`, `signIn`, `createAccount`, `getUser`, `isLoggedIn` and `logout`; they
+do not know about `http`, `FirebaseAuth` or `SharedPreferences`. Both login types end in the same
+saved session (`saveUserData`) and are read back as the same `User` model, so the splash, home,
+profile and cart screens work the same way for both backends. Only the profile screen checks
+`user.isFirebase` to decide which details and actions to show.
+
+### Benefits of Firebase in this app
+
+- **Real accounts.** Users can actually sign up, and their accounts persist, which DummyJSON
+  cannot do.
+- **Security handled by Google.** Passwords are hashed and stored by Firebase, never by the app.
+  Sensitive actions (change password, delete account) require re-authentication, and Firebase
+  Security Rules can restrict other Firebase services to signed-in users.
+- **Tokens and sessions.** The SDK issues short-lived ID tokens, refreshes them automatically and
+  keeps the user signed in between launches.
+- **Less backend code.** No server is needed for sign up, sign in, password changes or account
+  deletion; the Firebase Console shows and manages the users.
+- **Room to grow.** The same project can add Firestore, Storage, Google sign-in or email
+  verification later without changing the screens, only the `UserService`.
+
+### Enhancements
+
+- **Enhancement 1 — UserService functions.** `signIn`, `createAccount`, `signOut`,
+  `updateUsername`, `deleteAccount` and `resetPasswordFromCurrentPassword` with the `FirebaseAuth`
+  SDK. `logout()` signs out of Firebase, clears the saved session/token and redirects to sign in.
+- **Enhancement 2 — DummyJSON vs Firebase Auth.** The sign in screen accepts a DummyJSON username
+  or a Firebase email. New `signup_screen.dart` with validated fields (first name, last name, age,
+  contact no., username, email address, password).
+- **Enhancement 3 — Profile screen.** Loads the user with `UserService().getUser()` /
+  `getUserData()` and shows the details for the login type. Firebase users can update the
+  username, change the password and delete the account. Log Out is also in Settings.

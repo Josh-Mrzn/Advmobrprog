@@ -5,6 +5,10 @@ import 'package:provider/provider.dart';
 // providers
 import '../providers/theme_provider.dart';
 
+// services
+import '../services/cart_service.dart';
+import '../services/user_service.dart';
+
 // widgets
 import '../widgets/custom_text.dart';
 
@@ -66,6 +70,44 @@ class SettingsScreen extends StatelessWidget {
                       : 'Light theme is on',
                   fontSize: 12.sp,
                 ),
+              ),
+            ),
+            // LAB 5 - ENHANCEMENT 3: Logout in settings, back to sign in.
+            SizedBox(height: 24.h),
+            CustomText(
+              text: 'ACCOUNT',
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+            SizedBox(height: 8.h),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+                side: BorderSide(color: Theme.of(context).dividerColor),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  Icons.logout,
+                  size: 24.sp,
+                  color: Colors.deepOrangeAccent,
+                ),
+                title: CustomText(
+                  text: 'Log Out',
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+                onTap: () async {
+                  await UserService().logout();
+                  CartService.addedProducts.value = [];
+                  if (!context.mounted) return;
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/signin',
+                    (route) => false,
+                  );
+                },
               ),
             ),
           ],

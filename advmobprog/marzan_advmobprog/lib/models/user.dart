@@ -14,6 +14,11 @@ class User {
   final String image;
   final String accessToken;
   final String refreshToken;
+  // LAB 5: Firebase sign up fields and which backend the user signed in with.
+  final String uid;
+  final int age;
+  final String phone;
+  final String loginType;
 
   User({
     required this.id,
@@ -25,7 +30,14 @@ class User {
     required this.image,
     required this.accessToken,
     required this.refreshToken,
+    this.uid = '',
+    this.age = 0,
+    this.phone = '',
+    this.loginType = LoginType.dummyJson,
   });
+
+  // LAB 5: true when the account is managed by Firebase Auth.
+  bool get isFirebase => loginType == LoginType.firebase;
 
   // LAB 4 - ENHANCEMENT 3: full name shown on the profile header.
   String get fullName => '$firstName $lastName'.trim();
@@ -41,6 +53,10 @@ class User {
       image: json['image'] ?? '',
       accessToken: json['accessToken'] ?? '',
       refreshToken: json['refreshToken'] ?? '',
+      uid: json['uid'] ?? '',
+      age: json['age'] ?? 0,
+      phone: json['phone'] ?? '',
+      loginType: json['loginType'] ?? LoginType.dummyJson,
     );
   }
 
@@ -55,6 +71,16 @@ class User {
       'image': image,
       'accessToken': accessToken,
       'refreshToken': refreshToken,
+      'uid': uid,
+      'age': age,
+      'phone': phone,
+      'loginType': loginType,
     };
   }
+}
+
+// LAB 5: the two ways a user can sign in to the app.
+class LoginType {
+  static const String dummyJson = 'dummyjson';
+  static const String firebase = 'firebase';
 }

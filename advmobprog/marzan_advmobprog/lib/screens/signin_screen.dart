@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -41,13 +42,25 @@ class _SignInScreenState extends State<SignInScreen> {
     });
     if (_formKey.currentState!.validate()) {
       try {
-        final response = await userService.loginUser(
-          _usernameController.text,
-          _passwordController.text,
-        );
+        // LAB 5: an email signs in with Firebase Auth, a username with
+        // DummyJSON (POST /auth/login).
+        final input = _usernameController.text.trim();
+        final Map<String, dynamic> response;
+        if (input.contains('@')) {
+          await userService.signIn(
+            email: input,
+            password: _passwordController.text,
+          );
+          response = await userService.saveFirebaseSession();
+        } else {
+          response = await userService.loginUser(
+            input,
+            _passwordController.text,
+          );
 
-        // Save user data to SharedPreferences
-        await userService.saveUserData(response);
+          // Save user data to SharedPreferences
+          await userService.saveUserData(response);
+        }
 
         if (!mounted) return;
         setState(() {
@@ -55,6 +68,14 @@ class _SignInScreenState extends State<SignInScreen> {
         });
 
         Navigator.pushReplacementNamed(context, '/home', arguments: response);
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${e.message ?? e.code}')),
+        );
       } catch (e) {
         if (!mounted) return;
         setState(() {
@@ -103,9 +124,12 @@ class _SignInScreenState extends State<SignInScreen> {
                   TextFormField(
                     controller: _usernameController,
                     textInputAction: TextInputAction.next,
-                    decoration: _inputDecoration('Username', Icons.person),
+                    decoration: _inputDecoration(
+                      'Username or Email',
+                      Icons.person,
+                    ),
                     validator: (value) => (value == null || value.isEmpty)
-                        ? 'Please enter your username'
+                        ? 'Please enter your username or email'
                         : null,
                   ),
                   SizedBox(height: 16.h),
@@ -157,6 +181,16 @@ class _SignInScreenState extends State<SignInScreen> {
                               fontWeight: FontWeight.w600,
                               color: scheme.onPrimary,
                             ),
+                    ),
+                  ),
+                  // LAB 5 - ENHANCEMENT 2: link to the Firebase sign up form.
+                  SizedBox(height: 12.h),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/signup'),
+                    child: CustomText(
+                      text: "Don't have an account? Sign Up",
+                      fontSize: 13.sp,
+                      color: scheme.primary,
                     ),
                   ),
                 ],
