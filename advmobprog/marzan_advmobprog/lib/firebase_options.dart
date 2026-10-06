@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -56,7 +53,6 @@ class DefaultFirebaseOptions {
     projectId: 'marzan-advmobprog',
     storageBucket: 'marzan-advmobprog.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCuhuGmWJ0C3jY-sEe5ThSHVZSfaXDDkAc',
     appId: '1:621613260649:ios:568921827e7f993e60a7f8',
@@ -64,5 +60,14 @@ class DefaultFirebaseOptions {
     projectId: 'marzan-advmobprog',
     storageBucket: 'marzan-advmobprog.firebasestorage.app',
     iosBundleId: 'com.example.marzanAdvmobprog',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBU1QWzz00AsF2RcsZbqX_ChbcIKBFwAGc',
+    appId: '1:621613260649:web:c7cb6acdc003848560a7f8',
+    messagingSenderId: '621613260649',
+    projectId: 'marzan-advmobprog',
+    authDomain: 'marzan-advmobprog.firebaseapp.com',
+    storageBucket: 'marzan-advmobprog.firebasestorage.app',
+    measurementId: 'G-28K2VR83JZ',
   );
 }
