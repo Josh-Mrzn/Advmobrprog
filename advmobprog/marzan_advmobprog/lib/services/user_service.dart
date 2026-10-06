@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants.dart';
 import '../models/user.dart' as app;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<UserService> userService = ValueNotifier(UserService());
@@ -173,6 +174,8 @@ class UserService {
     await currentUser!.reauthenticateWithCredential(credential);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('profile_${currentUser!.uid}');
+    // LAB 6: remove the user from the chat list.
+    await _firestore.collection('Users').doc(currentUser!.uid).delete();
     await currentUser!.delete();
     await firebaseAuth.signOut();
   }
@@ -219,6 +222,18 @@ class UserService {
       'loginType': app.LoginType.firebase,
     };
     await saveUserData(userData);
+
+    // LAB 6: keep the Firestore "Users" doc in sync so this user shows up
+    // in the chat list. Not awaited: an offline write would wait forever.
+    _firestore.collection('Users').doc(user.uid).set({
+      for (final key in ['firstName', 'lastName', 'username'])
+        if ((userData[key] ?? '').toString().isNotEmpty) key: userData[key],
+      'uid': user.uid,
+      'email': user.email ?? '',
+    }, SetOptions(merge: true));
+
     return userData;
   }
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import 'cart_screen.dart';
+import 'chat_screen.dart';
 import 'product_screen.dart';
 import 'profile_screen.dart';
 
@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? Image.asset('assets/images/NU LOGO.png', scale: 11.sp)
               : CustomText(
                   text: (_selectedIndex == 1)
-                      ? 'Cart'
+                      ? 'Chat'
                       : (_selectedIndex == 2)
                       // LAB 4 - ENHANCEMENT 3: first name on the profile tab.
                       ? (userData?['firstName'] ?? 'Profile')
@@ -54,10 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
         body: PageView(
           physics: const NeverScrollableScrollPhysics(),
           controller: _pageController,
-          // LAB 3 - ENHANCEMENT 1: CartScreen added as the second page.
           children: <Widget>[
             const ProductScreen(),
-            const CartScreen(),
+            // LAB 6: the second page is now the chat list.
+            const ChatScreen(),
             // LAB 4 - ENHANCEMENT 3: profile_screen as the third page.
             const ProfileScreen(),
           ],
@@ -67,30 +67,17 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           },
         ),
-        // ======================= LAB 3 - ENHANCEMENT 2 =======================
-        // Chat moved from the bottom navigation to a FloatingActionButton.
-        // The button is hidden while the CartScreen (index 1) is shown.
-        // =====================================================================
-        floatingActionButton: (_selectedIndex == 1)
-            ? null
-            : FloatingActionButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Chat coming soon')),
-                  );
-                },
-                child: const Icon(Icons.chat),
-              ),
         bottomNavigationBar: BottomNavigationBar(
           showSelectedLabels: false, //selected item
           showUnselectedLabels: false, //unselected item
           onTap: _onTappedBar,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.shop_2), label: 'Shop'),
-            // LAB 3 - ENHANCEMENT 2: Chat replaced by Cart.
+            // LAB 6: second tab revised into Chat (new icon).
             BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart),
-              label: 'Cart',
+              icon: Icon(Icons.chat_bubble_outline),
+              activeIcon: Icon(Icons.chat_bubble),
+              label: 'Chat',
             ),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
